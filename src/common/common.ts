@@ -21,7 +21,7 @@ export class Translator<T extends object> {
 
   public to(t: T): [number, object] | null {
     for (let i = 0; i < this.types.length; i++) {
-      if (t.constructor === this.types[i]) {
+      if (Object.getPrototypeOf(t) === this.types[i].prototype) {
         return [i, t];
       }
     }

@@ -38,7 +38,7 @@ export class GlobalState {
   constructor(private notifier: Notifier) {}
 
   public canAddPlayer(): boolean {
-    return this.players < 4;
+    return true;
   }
 
   public addPlayer(): Player {
@@ -82,7 +82,7 @@ class RollEvent implements Event {
 }
 
 export class LocalState implements EventListener {
-  private dice: LocalDice;
+  public readonly dice: LocalDice;
 
   constructor(state: State) {
     this.dice = new LocalDice(state.dice);

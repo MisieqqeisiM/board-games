@@ -1,3 +1,4 @@
+import { HTMLDice } from '../../components/dice/dice-html.ts';
 import { LocalState, RollAction } from '../common/game.ts';
 import { Client } from './client.ts';
 
@@ -10,6 +11,9 @@ const client = new Client({
   },
   init: (s) => {
     state = new LocalState(s);
+    state.dice.addObserver(
+      new HTMLDice(document.body, () => client.action(new RollAction())),
+    );
   },
 });
 
