@@ -1,6 +1,13 @@
 {
   "tasks": {
-    "dev": "deno run -A --watch main.ts",
-    "esbuild_dev" : "deno run --allow-env --allow-read --allow-write --allow-net --allow-run bundle.ts"
+    "dev": "deno run -A --watch src/server/main.ts",
+    "esbuild_dev": "deno run --allow-env --allow-read --allow-write --allow-net --allow-run bundle.ts"
+  },
+  "fmt": {
+    "singleQuote": true,
+    "semiColons": true,
+    "indentWidth": 2,
+    "useTabs": false,
+    "lineWidth": 80
   }
 }

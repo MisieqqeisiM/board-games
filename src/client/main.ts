@@ -1,22 +1,16 @@
-import { io, Socket } from './libs.ts';
-import { ActionListener, EventListener, RollAction } from "../common/game.ts";
-import { ClientToServer, ServerToClient } from "../common/common.ts";
+import { LocalState, RollAction } from '../common/game.ts';
+import { Client } from './client.ts';
 
-const socket: Socket<ServerToClient, ClientToServer> = io({autoConnect: false, transports: ["websocket"]});
+let state: LocalState | undefined;
 
-socket.on("connect", ()=> {
-    console.log("hello");
+const client = new Client({
+  event: (e) => {
+    if (!state) throw new Error('event before init');
+    e.accept(state);
+  },
+  init: (s) => {
+    state = new LocalState(s);
+  },
 });
 
-socket.on("_init", (state) => {
-    console.log(state);
-});
-
-socket.on("roll", (roll) => {
-    console.log(roll);
-});
-
-socket.connect();
-
-socket.emit('roll', new RollAction());
-
+client.action(new RollAction());

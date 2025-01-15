@@ -1,1 +1,1 @@
-export { io, Socket } from "npm:socket.io-client@4.1.3";
+export { io, Socket } from 'npm:socket.io-client@4.1.3';

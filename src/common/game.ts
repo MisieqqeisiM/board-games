@@ -1,19 +1,24 @@
-import { Dice, DiceState, DiceUpdate, LocalDice } from '../../components/dice/dice.ts'
+import {
+  Dice,
+  DiceState,
+  DiceUpdate,
+  LocalDice,
+} from '../../components/dice/dice.ts';
 
 export interface ActionListener {
-  roll(action: RollAction) : void;
+  roll(action: RollAction): void;
 }
 
 export interface Action {
-  accept(listener : ActionListener) : void;
+  accept(listener: ActionListener): void;
 }
 
 export interface EventListener {
   roll(event: RollEvent): void;
 }
 
-export interface Event { 
-  accept(listener: EventListener) : void;
+export interface Event {
+  accept(listener: EventListener): void;
 }
 
 export interface Notifier {
@@ -40,13 +45,19 @@ export class GlobalState {
     return this.players++;
   }
 
-  private sendToAllPlayers(event : Event): void {
+  private sendToAllPlayers(event: Event): void {
     for (let i = 0; i < this.players; i++) {
       this.notifier.sendEvent(i, event);
     }
   }
 
-  public onRoll(_player: Player, _action: RollAction) {
+  public apply(player: Player, action: Action) {
+    action.accept({
+      roll: (roll) => this.onRoll(player, roll),
+    });
+  }
+
+  private onRoll(_player: Player, _action: RollAction) {
     const diceUpdate = this.dice.roll();
     this.sendToAllPlayers(new RollEvent(diceUpdate));
   }
@@ -70,10 +81,10 @@ class RollEvent implements Event {
   }
 }
 
-class LocalState implements EventListener {
-  private dice : LocalDice;
+export class LocalState implements EventListener {
+  private dice: LocalDice;
 
-  constructor(state : State) {
+  constructor(state: State) {
     this.dice = new LocalDice(state.dice);
   }
 
@@ -82,3 +93,5 @@ class LocalState implements EventListener {
   }
 }
 
+export const ACTIONS = [RollAction];
+export const EVENTS = [RollEvent];
