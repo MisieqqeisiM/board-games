@@ -31,12 +31,22 @@ export class HTMLBoard implements BoardObserver {
   private readonly OFFSET = 6;
 
   private element: HTMLDivElement;
+  private readonly fields: ObjectMap<[number, number], HTMLDivElement> =
+    new ObjectMap(
+      (k) => k.toString(),
+    );
 
-  private readonly COLORED: Map<string, [number, number][]> = new Map([
-    ['green', [[0, 4], [1, 5], [2, 5], [3, 5], [4, 5]]],
-    ['red', [[6, 0], [5, 1], [5, 2], [5, 3], [5, 4]]],
-    ['yellow', [[10, 6], [9, 5], [8, 5], [7, 5], [6, 5]]],
-    ['blue', [[4, 10], [5, 9], [5, 8], [5, 7], [5, 6]]],
+  private readonly STARTS: Map<string, [number, number]> = new Map([
+    ['green', [0, 4]],
+    ['red', [6, 0]],
+    ['yellow', [10, 6]],
+    ['blue', [4, 10]],
+  ]);
+  private readonly FINISHES: Map<string, [number, number][]> = new Map([
+    ['green', [[1, 5], [2, 5], [3, 5], [4, 5]]],
+    ['red', [[5, 1], [5, 2], [5, 3], [5, 4]]],
+    ['yellow', [[9, 5], [8, 5], [7, 5], [6, 5]]],
+    ['blue', [[5, 9], [5, 8], [5, 7], [5, 6]]],
   ]);
 
   constructor(
@@ -45,9 +55,6 @@ export class HTMLBoard implements BoardObserver {
   ) {
     const n = 11;
     this.element = document.createElement('div');
-    const fields: ObjectMap<[number, number], HTMLDivElement> = new ObjectMap(
-      (k) => k.toString(),
-    );
 
     for (let x = 0; x < n; x++) {
       for (let y = 0; y < n; y++) {
@@ -57,17 +64,23 @@ export class HTMLBoard implements BoardObserver {
           field.style.top = `${y * this.SIZE + this.OFFSET}px`;
           field.style.left = `${x * this.SIZE + this.OFFSET}px`;
           field.classList.add('gray');
-          fields.set([x, y], field);
+          this.fields.set([x, y], field);
           this.element.appendChild(field);
         }
       }
     }
 
-    this.COLORED.forEach((coloredFields, color) =>
-      coloredFields.forEach((field) => {
-        const f = fields.get(field);
+    this.STARTS.forEach((field, color) => {
+      this.fields.get(field)?.classList.remove('gray');
+      this.fields.get(field)?.classList.add(color);
+    });
+
+    this.FINISHES.forEach((finishFields, color) =>
+      finishFields.forEach((field) => {
+        const f = this.fields.get(field);
         f?.classList.remove('gray');
         f?.classList.add(color);
+        f?.classList.add('small');
       })
     );
 
@@ -82,8 +95,6 @@ export class HTMLBoard implements BoardObserver {
       this.element,
       this,
       piece.piece,
-      piece.piece.x,
-      piece.piece.y,
       COLORS[piece.piece.player],
       this.interactor,
     );
@@ -102,12 +113,33 @@ export class HTMLBoard implements BoardObserver {
       return null;
     }
   }
+
+  isFinish(x: number, y: number) {
+    return this.FINISHES.values()
+      .some((fields) => fields.some((f) => x == f[0] && y == f[1]));
+  }
+
+  setFieldFree(x: number, y: number): void {
+    if (this.isFinish(x, y)) {
+      this.fields.get([x, y])?.classList.add('small');
+    }
+  }
+
+  setFieldOccupied(x: number, y: number): void {
+    if (this.isFinish(x, y)) {
+      this.fields.get([x, y])?.classList.remove('small');
+    }
+  }
 }
 
 class HTMLPiece implements PieceObserver {
   private element: HTMLDivElement;
   private x: number;
   private y: number;
+
+  private pieceX: number;
+  private pieceY: number;
+
   private dragX: number = 0;
   private dragY: number = 0;
 
@@ -118,16 +150,17 @@ class HTMLPiece implements PieceObserver {
     wrapper: HTMLElement,
     private readonly board: HTMLBoard,
     private readonly piece: Piece,
-    x: number,
-    y: number,
     color: string,
     private readonly boardInteractor: BoardInteractor,
   ) {
     this.element = document.createElement('div');
     this.element.classList.add('piece', color);
 
-    this.x = 50 * x + 3 + 25;
-    this.y = 50 * y + 3 + 25;
+    this.pieceX = piece.x;
+    this.pieceY = piece.y;
+
+    this.x = 50 * piece.x + 3 + 25;
+    this.y = 50 * piece.y + 3 + 25;
     this.setPosition(this.x, this.y);
     wrapper.appendChild(this.element);
   }
@@ -137,6 +170,10 @@ class HTMLPiece implements PieceObserver {
   }
 
   onMove(x: number, y: number): void {
+    this.board.setFieldFree(this.pieceX, this.pieceY);
+    this.board.setFieldOccupied(x, y);
+    this.pieceX = x;
+    this.pieceY = y;
     this.x = 50 * x + 3 + 25;
     this.y = 50 * y + 3 + 25;
     this.release();
@@ -163,7 +200,7 @@ class HTMLPiece implements PieceObserver {
     this.release();
     if (field !== null) {
       this.boardInteractor.movePiece(this.piece.id, field[0], field[1]);
-      this.onMove(field[0], field[1])
+      this.onMove(field[0], field[1]);
     }
   };
 
