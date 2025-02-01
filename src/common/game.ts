@@ -1,4 +1,4 @@
-import { Board, LocalBoard, Piece } from '../../components/board/board.ts';
+import { Board, BoardDto, LocalBoard, Piece } from '../../components/board/board.ts';
 import {
   Dice,
   DiceState,
@@ -30,19 +30,20 @@ export interface Notifier {
 
 export type Player = number;
 
-export class State {
+export class StateDto {
   constructor(
     public readonly dice: DiceState,
-    public readonly board: Board,
+    public readonly board: BoardDto,
     public readonly turn: number,
   ) {}
 }
+
 
 export class GlobalState {
   players: number = 0;
   turn: number = 0;
   dice: Dice = new Dice();
-  board: Board = new Board();
+  board: Board = Board.newBoard()
 
   constructor(private notifier: Notifier) {}
 
@@ -67,17 +68,28 @@ export class GlobalState {
     });
   }
 
-  private onRoll(_player: Player, _action: RollAction) {
+  private onRoll(player: Player, _action: RollAction) {
+    // if (this.turn != player) return;
     const diceUpdate = this.dice.roll();
-    this.sendToAllPlayers(new RollEvent(diceUpdate, _player));
+    this.sendToAllPlayers(new RollEvent(diceUpdate, player));
   }
   private onPieceMove(player: Player, action: PieceMoveAction) {
+    // if (this.turn != player) return;
+    if (
+      !this.board.isValidMove(
+        action.pieceId,
+        [action.x, action.y],
+        this.dice.getResult(),
+      )
+    ) return;
+
+    this.board.movePiece(action.pieceId, action.x, action.y);
     const event = new PieceMoveEvent(action.pieceId, action.x, action.y);
     this.sendToAllPlayers(event);
   }
 
-  public getState(): State {
-    return new State(this.dice.getState(), this.board, this.turn);
+  public getState(): StateDto {
+    return new StateDto(this.dice.getState(), this.board.toDto(), this.turn);
   }
 }
 
@@ -123,9 +135,9 @@ export class LocalState implements EventListener {
   public readonly board: LocalBoard;
   public readonly turn: number;
 
-  constructor(state: State) {
+  constructor(state: StateDto) {
     this.dice = new LocalDice(state.dice);
-    this.board = new LocalBoard(state.board);
+    this.board = new LocalBoard(Board.fromDto(state.board));
     this.turn = state.turn;
   }
 

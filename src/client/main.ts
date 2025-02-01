@@ -9,7 +9,6 @@ let state: LocalState | undefined;
 const client = new Client({
   event: (e) => {
     if (!state) throw new Error('event before init');
-    console.log(`Received event: ${e}`)
     e.accept(state);
   },
   init: (s) => {

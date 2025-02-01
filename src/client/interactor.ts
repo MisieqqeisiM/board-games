@@ -12,14 +12,14 @@ export class LocalInteractor implements BoardInteractor {
     return this.state.turn;
   }
   canMovePiece(piece: Piece): boolean {
-    return true;
     return this.state.board.canMovePiece(piece);
   }
   getLegalMoves(piece: Piece): [number, number][] {
-    return [];
+    return this.state.board.getLegalMoves(piece);
   }
 
   movePiece(pieceId: number, x: number, y: number) {
+    this.state.board.movePiece(pieceId, x, y);
     this.client.action(new PieceMoveAction(pieceId, x, y));
   }
 }

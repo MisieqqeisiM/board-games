@@ -31,6 +31,9 @@ export class HTMLBoard implements BoardObserver {
   private readonly OFFSET = 6;
 
   private element: HTMLDivElement;
+
+  private highlightedFields: HTMLElement[] = [];
+
   private readonly fields: ObjectMap<[number, number], HTMLDivElement> =
     new ObjectMap(
       (k) => k.toString(),
@@ -91,6 +94,7 @@ export class HTMLBoard implements BoardObserver {
   }
 
   createPiece(piece: LocalPiece): PieceObserver {
+    this.setFieldOccupied(piece.piece.x, piece.piece.y);
     return new HTMLPiece(
       this.element,
       this,
@@ -114,7 +118,7 @@ export class HTMLBoard implements BoardObserver {
     }
   }
 
-  isFinish(x: number, y: number) {
+  private isFinish(x: number, y: number) {
     return this.FINISHES.values()
       .some((fields) => fields.some((f) => x == f[0] && y == f[1]));
   }
@@ -129,6 +133,25 @@ export class HTMLBoard implements BoardObserver {
     if (this.isFinish(x, y)) {
       this.fields.get([x, y])?.classList.remove('small');
     }
+  }
+
+  highlightLegalMoves(piece: Piece): void {
+    const legalMoves = this.interactor.getLegalMoves(piece);
+    const elements = legalMoves.map((pos) => this.fields.get(pos)!);
+    elements.forEach((element) => this.highlight(element));
+    this.highlightedFields = elements;
+  }
+
+  hideLegalMoves(): void {
+    this.highlightedFields.forEach((element) => this.unhighlight(element));
+    this.highlightedFields = [];
+  }
+
+  highlight(element: HTMLElement) {
+    element.classList.add('big');
+  }
+  unhighlight(element: HTMLElement) {
+    element.classList.remove('big');
   }
 }
 
@@ -163,6 +186,7 @@ class HTMLPiece implements PieceObserver {
     this.y = 50 * piece.y + 3 + 25;
     this.setPosition(this.x, this.y);
     wrapper.appendChild(this.element);
+    this.element.addEventListener("click", this.onClick);
   }
 
   onMovabilityUpdate(): void {
@@ -193,6 +217,7 @@ class HTMLPiece implements PieceObserver {
     document.removeEventListener('mousemove', this.onDrag);
     this.element.classList.remove('dragged');
     this.setPosition(this.x, this.y);
+    this.board.hideLegalMoves();
   }
 
   private onMouseUp = () => {
@@ -200,7 +225,6 @@ class HTMLPiece implements PieceObserver {
     this.release();
     if (field !== null) {
       this.boardInteractor.movePiece(this.piece.id, field[0], field[1]);
-      this.onMove(field[0], field[1]);
     }
   };
 
@@ -215,8 +239,17 @@ class HTMLPiece implements PieceObserver {
   private onMouseDown = (e: MouseEvent) => {
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('mousemove', this.onDrag);
+    this.board.highlightLegalMoves(this.piece);
     this.dragX = e.pageX;
     this.dragY = e.pageY;
+  };
+
+  private onClick = () => {
+    const moves = this.boardInteractor.getLegalMoves(this.piece);
+    console.log(moves)
+    if (moves.length === 1) {
+      this.boardInteractor.movePiece(this.piece.id, moves[0][0], moves[0][1]);
+    }
   };
 
   private setPosition(x: number, y: number) {

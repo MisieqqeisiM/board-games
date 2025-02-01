@@ -17,6 +17,10 @@ export class Dice {
   public getState(): DiceState {
     return new DiceState(this.result);
   }
+
+  public getResult() {
+    return this.result;
+  }
 }
 
 export interface LocalDiceObserver {
@@ -43,5 +47,9 @@ export class LocalDice {
 
   public roll() {
     this.observers.forEach((x) => x.onRoll());
+  }
+
+  public getResult(): number {
+    return this.result;
   }
 }
