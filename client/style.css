@@ -82,6 +82,10 @@ body {
   cursor: grab;
 }
 
+.piece.draggable {
+  cursor: pointer;
+}
+
 .piece.dragged {
   transition: none;
 }

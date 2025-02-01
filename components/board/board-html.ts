@@ -1,4 +1,10 @@
-import { BoardObserver, LocalPiece, Piece, PieceObserver } from './board.ts';
+import {
+  BoardInteractor,
+  BoardObserver,
+  LocalPiece,
+  Piece,
+  PieceObserver,
+} from './board.ts';
 
 const COLORS = [
   'red',
@@ -21,29 +27,35 @@ class ObjectMap<K, V, IK = string> {
 }
 
 export class HTMLBoard implements BoardObserver {
+  private readonly SIZE = 50;
+  private readonly OFFSET = 6;
+
   private element: HTMLDivElement;
 
   private readonly COLORED: Map<string, [number, number][]> = new Map([
     ['green', [[0, 4], [1, 5], [2, 5], [3, 5], [4, 5]]],
     ['red', [[6, 0], [5, 1], [5, 2], [5, 3], [5, 4]]],
     ['yellow', [[10, 6], [9, 5], [8, 5], [7, 5], [6, 5]]],
-    ['blue', [[4, 10], [5, 9], [5, 8], [5, 7], [5, 6]]]
+    ['blue', [[4, 10], [5, 9], [5, 8], [5, 7], [5, 6]]],
   ]);
 
-  constructor(wrapper: HTMLElement) {
+  constructor(
+    wrapper: HTMLElement,
+    private readonly interactor: BoardInteractor,
+  ) {
     const n = 11;
     this.element = document.createElement('div');
     const fields: ObjectMap<[number, number], HTMLDivElement> = new ObjectMap(
-      (k) => k.toString()
+      (k) => k.toString(),
     );
 
     for (let x = 0; x < n; x++) {
       for (let y = 0; y < n; y++) {
-        if (((x >= 4 && x <= 6) || (y >= 4 && y <= 6)) && (x != 5 || y != 5)) {
+        if (this.isLegalFieldPosition(x, y)) {
           const field = document.createElement('div');
           field.classList.add('field');
-          field.style.top = `${y * 50 + 6}px`;
-          field.style.left = `${x * 50 + 6}px`;
+          field.style.top = `${y * this.SIZE + this.OFFSET}px`;
+          field.style.left = `${x * this.SIZE + this.OFFSET}px`;
           field.classList.add('gray');
           fields.set([x, y], field);
           this.element.appendChild(field);
@@ -59,8 +71,8 @@ export class HTMLBoard implements BoardObserver {
       })
     );
 
-    this.element.style.width = `${n * 50 + 6}px`;
-    this.element.style.height = `${n * 50 + 6}px`;
+    this.element.style.width = `${n * this.SIZE + this.OFFSET}px`;
+    this.element.style.height = `${n * this.SIZE + this.OFFSET}px`;
     this.element.classList.add('board');
     wrapper.appendChild(this.element);
   }
@@ -68,10 +80,27 @@ export class HTMLBoard implements BoardObserver {
   createPiece(piece: LocalPiece): PieceObserver {
     return new HTMLPiece(
       this.element,
+      this,
+      piece.piece,
       piece.piece.x,
       piece.piece.y,
       COLORS[piece.piece.player],
+      this.interactor,
     );
+  }
+
+  private isLegalFieldPosition(x: number, y: number): boolean {
+    return (((x >= 4 && x <= 6) || (y >= 4 && y <= 6)) && (x != 5 || y != 5));
+  }
+
+  getField(x: number, y: number): [number, number] | null {
+    const fx = Math.round((x - this.OFFSET) / this.SIZE);
+    const fy = Math.round((y - this.OFFSET) / this.SIZE);
+    if (this.isLegalFieldPosition(fx, fy)) {
+      return [fx, fy];
+    } else {
+      return null;
+    }
   }
 }
 
@@ -82,14 +111,60 @@ class HTMLPiece implements PieceObserver {
   private dragX: number = 0;
   private dragY: number = 0;
 
-  private onMouseUp = () => {
+  private centerX: number = 0;
+  private centerY: number = 0;
+
+  constructor(
+    wrapper: HTMLElement,
+    private readonly board: HTMLBoard,
+    private readonly piece: Piece,
+    x: number,
+    y: number,
+    color: string,
+    private readonly boardInteractor: BoardInteractor,
+  ) {
+    this.element = document.createElement('div');
+    this.element.classList.add('piece', color);
+
+    this.x = 50 * x + 3 + 25;
+    this.y = 50 * y + 3 + 25;
+    this.setPosition(this.x, this.y);
+    wrapper.appendChild(this.element);
+  }
+
+  onMovabilityUpdate(): void {
+    this.setMovable(this.boardInteractor.canMovePiece(this.piece));
+  }
+
+  onMove(x: number, y: number): void {
+    this.x = 50 * x + 3 + 25;
+    this.y = 50 * y + 3 + 25;
+    this.release();
+  }
+
+  private setMovable(movable: boolean) {
+    if (movable) {
+      this.element.classList.add('draggable');
+      this.element.addEventListener('mousedown', this.onMouseDown);
+    } else {
+      this.element.classList.remove('draggable');
+      this.element.removeEventListener('mousedown', this.onMouseDown);
+    }
+  }
+  private release() {
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('mousemove', this.onDrag);
     this.element.classList.remove('dragged');
-    this.setPosition(
-      this.x,
-      this.y,
-    );
+    this.setPosition(this.x, this.y);
+  }
+
+  private onMouseUp = () => {
+    const field = this.board.getField(this.centerX, this.centerY);
+    this.release();
+    if (field !== null) {
+      this.boardInteractor.movePiece(this.piece.id, field[0], field[1]);
+      this.onMove(field[0], field[1])
+    }
   };
 
   private onDrag = (e: MouseEvent) => {
@@ -100,35 +175,16 @@ class HTMLPiece implements PieceObserver {
     );
   };
 
+  private onMouseDown = (e: MouseEvent) => {
+    document.addEventListener('mouseup', this.onMouseUp);
+    document.addEventListener('mousemove', this.onDrag);
+    this.dragX = e.pageX;
+    this.dragY = e.pageY;
+  };
+
   private setPosition(x: number, y: number) {
+    this.centerX = x - 25;
+    this.centerY = y - 25;
     this.element.style.transform = `translate(${x}px, ${y}px)`;
-  }
-
-  constructor(
-    wrapper: HTMLElement,
-    x: number,
-    y: number,
-    color: string,
-  ) {
-    this.element = document.createElement('div');
-    this.element.classList.add('piece', color);
-
-    this.element.addEventListener('mousedown', (e) => {
-      document.addEventListener('mouseup', this.onMouseUp);
-      document.addEventListener('mousemove', this.onDrag);
-      this.dragX = e.pageX;
-      this.dragY = e.pageY;
-    });
-
-    this.x = 50 * x + 3 + 25;
-    this.y = 50 * y + 3 + 25;
-    this.setPosition(this.x, this.y);
-    wrapper.appendChild(this.element);
-  }
-
-  onMove(x: number, y: number): void {
-    this.x = 50 * x + 3 + 25;
-    this.y = 50 * y + 3 + 25;
-    this.onMouseUp();
   }
 }
