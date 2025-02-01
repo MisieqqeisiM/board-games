@@ -1,8 +1,8 @@
 import { HTMLBoard } from '../../components/board/board-html.ts';
-import { LocalBoard } from '../../components/board/board.ts';
 import { HTMLDice } from '../../components/dice/dice-html.ts';
 import { LocalState, RollAction } from '../common/game.ts';
 import { Client } from './client.ts';
+import { LocalInteractor } from './interactor.ts';
 
 let state: LocalState | undefined;
 
@@ -14,7 +14,9 @@ const client = new Client({
   init: (s) => {
     state = new LocalState(s);
 
-    state.board.subscribe(new HTMLBoard(document.body));
+    const interactor = new LocalInteractor(state, client);
+    document.body.innerHTML = ""
+    state.board.subscribe(new HTMLBoard(document.body, interactor));
     state.dice.subscribe(
       new HTMLDice(document.body, () => client.action(new RollAction())),
     );

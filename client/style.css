@@ -1,4 +1,32 @@
-html, body {
+:root {
+  --color-1: #ff6e61;
+  --color-2: #69bf91;
+  --color-3: #4b91e2;
+  --color-4: #f7c94b;
+}
+
+.red {
+  background-color: var(--color-1);
+}
+
+.green {
+  background-color: var(--color-2);
+}
+
+.blue {
+  background-color: var(--color-3);
+}
+
+.yellow {
+  background-color: var(--color-4);
+}
+
+.gray {
+  background-color: #777777;
+}
+
+html,
+body {
   margin: 0px;
   padding: 0px;
   width: 100%;
@@ -40,21 +68,55 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 3px;
-  background-color: #777777;
+}
+
+.field {
+  transition: all 0.2s ease;
+}
+
+.field.small {
+  width: 30px;
+  height: 30px;
+  margin: 7px;
+}
+
+.field.big {
+  width: 50px;
+  height: 50px;
+  transform: translate(-3px, -3px);
+  margin: 0;
 }
 
 .piece {
   position: absolute;
   width: 34px;
   height: 34px;
-  top: -20px;
-  left: -20px;
-  background-color: red;
-  border: 3px solid black;
+  top: -19px;
+  left: -19px;
+  border: 2px solid #111;
   border-radius: 20px;
   transform-origin: 0px, 0px;
   transition: transform 0.2s;
+}
+
+.piece.draggable {
   cursor: grab;
+  animation: pulse 2s infinite;
+}
+
+
+@keyframes pulse {
+  0% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
+  }
+
+  70% {
+      box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+  }
+
+  100% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
 }
 
 .piece.dragged {
