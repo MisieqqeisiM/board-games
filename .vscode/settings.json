@@ -1,5 +1,8 @@
 {
   "editor.tabSize": 2,
   "editor.detectIndentation": false,
-  "editor.defaultFormatter": null
+  "editor.defaultFormatter": null,
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
 }

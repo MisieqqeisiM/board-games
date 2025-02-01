@@ -32,7 +32,7 @@ export class LocalDice {
     this.result = state.result;
   }
 
-  public addObserver(observer: LocalDiceObserver) {
+  public subscribe(observer: LocalDiceObserver) {
     this.observers.push(observer);
   }
 

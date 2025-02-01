@@ -1,3 +1,4 @@
+import { Board, LocalBoard } from '../../components/board/board.ts';
 import {
   Dice,
   DiceState,
@@ -28,12 +29,13 @@ export interface Notifier {
 export type Player = number;
 
 export class State {
-  constructor(public dice: DiceState) {}
+  constructor(public readonly dice: DiceState, public readonly board: Board) {}
 }
 
 export class GlobalState {
   players: number = 0;
   dice: Dice = new Dice();
+  board: Board = new Board();
 
   constructor(private notifier: Notifier) {}
 
@@ -63,7 +65,7 @@ export class GlobalState {
   }
 
   public getState(): State {
-    return new State(this.dice.getState());
+    return new State(this.dice.getState(), this.board);
   }
 }
 
@@ -83,9 +85,11 @@ class RollEvent implements Event {
 
 export class LocalState implements EventListener {
   public readonly dice: LocalDice;
+  public readonly board: LocalBoard;
 
   constructor(state: State) {
     this.dice = new LocalDice(state.dice);
+    this.board = new LocalBoard(state.board);
   }
 
   roll(event: RollEvent): void {

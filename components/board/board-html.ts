@@ -1,55 +1,14 @@
-export class HTMLBoard {
-  private element: HTMLDivElement;
-  private static readonly CYCLE = [
-    [6, 0],
-    [6, 1],
-    [6, 2],
-    [6, 3],
-    [6, 4],
-    [7, 4],
-    [8, 4],
-    [9, 4],
-    [10, 4],
-    [10, 5],
-    [10, 6],
-    [9, 6],
-    [8, 6],
-    [7, 6],
-    [6, 6],
-    [6, 7],
-    [6, 8],
-    [6, 9],
-    [6, 10],
-    [5, 10],
-    [4, 10],
-    [4, 9],
-    [4, 8],
-    [4, 7],
-    [4, 6],
-    [3, 6],
-    [2, 6],
-    [1, 6],
-    [0, 6],
-    [0, 5],
-    [0, 4],
-    [1, 4],
-    [2, 4],
-    [3, 4],
-    [4, 4],
-    [4, 3],
-    [4, 2],
-    [4, 1],
-    [4, 0],
-    [5, 0],
-    [5, 1],
-    [5, 2],
-    [5, 3],
-    [5, 4],
-  ];
+import { BoardObserver, LocalPiece, Piece, PieceObserver } from './board.ts';
 
-  private static rotate([x, y]: [number, number]): [number, number] {
-    return [y, 10 - x];
-  }
+const COLORS = [
+  'red',
+  'green',
+  'blue',
+  'yellow',
+];
+
+export class HTMLBoard implements BoardObserver {
+  private element: HTMLDivElement;
 
   constructor(wrapper: HTMLElement) {
     const n = 11;
@@ -70,19 +29,27 @@ export class HTMLBoard {
     this.element.style.width = `${n * 50 + 6}px`;
     this.element.style.height = `${n * 50 + 6}px`;
     this.element.classList.add('board');
-    new HTMLPiece(this.element, 75 + 3, 75 + 3);
     wrapper.appendChild(this.element);
+  }
+
+  createPiece(piece: LocalPiece): PieceObserver {
+    return new HTMLPiece(
+      this.element,
+      piece.piece.x,
+      piece.piece.y,
+      COLORS[piece.piece.player],
+    );
   }
 }
 
-class HTMLPiece {
+class HTMLPiece implements PieceObserver {
   private element: HTMLDivElement;
   private x: number;
   private y: number;
   private dragX: number = 0;
   private dragY: number = 0;
 
-  private onMouseUp = (_: MouseEvent) => {
+  private onMouseUp = () => {
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('mousemove', this.onDrag);
     this.element.classList.remove('dragged');
@@ -104,9 +71,15 @@ class HTMLPiece {
     this.element.style.transform = `translate(${x}px, ${y}px)`;
   }
 
-  constructor(private wrapper: HTMLElement, x: number, y: number) {
+  constructor(
+    wrapper: HTMLElement,
+    x: number,
+    y: number,
+    color: string,
+  ) {
     this.element = document.createElement('div');
     this.element.classList.add('piece');
+    this.element.style.backgroundColor = color;
 
     this.element.addEventListener('mousedown', (e) => {
       document.addEventListener('mouseup', this.onMouseUp);
@@ -115,9 +88,15 @@ class HTMLPiece {
       this.dragY = e.pageY;
     });
 
-    this.x = x;
-    this.y = y;
-    this.setPosition(x, y);
+    this.x = 50 * x + 3 + 25;
+    this.y = 50 * y + 3 + 25;
+    this.setPosition(this.x, this.y);
     wrapper.appendChild(this.element);
+  }
+
+  onMove(x: number, y: number): void {
+    this.x = 50 * x + 3 + 25;
+    this.y = 50 * y + 3 + 25;
+    this.onMouseUp();
   }
 }
