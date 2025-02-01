@@ -7,12 +7,35 @@ const COLORS = [
   'yellow',
 ];
 
+class ObjectMap<K, V, IK = string> {
+  private map: Map<IK, V> = new Map();
+
+  constructor(private readonly keyGetter: (k: K) => IK) {}
+
+  get(key: K): V | undefined {
+    return this.map.get(this.keyGetter(key));
+  }
+  set(key: K, value: V) {
+    this.map.set(this.keyGetter(key), value);
+  }
+}
+
 export class HTMLBoard implements BoardObserver {
   private element: HTMLDivElement;
+
+  private readonly COLORED: Map<string, [number, number][]> = new Map([
+    ['green', [[0, 4], [1, 5], [2, 5], [3, 5], [4, 5]]],
+    ['red', [[6, 0], [5, 1], [5, 2], [5, 3], [5, 4]]],
+    ['yellow', [[10, 6], [9, 5], [8, 5], [7, 5], [6, 5]]],
+    ['blue', [[4, 10], [5, 9], [5, 8], [5, 7], [5, 6]]]
+  ]);
 
   constructor(wrapper: HTMLElement) {
     const n = 11;
     this.element = document.createElement('div');
+    const fields: ObjectMap<[number, number], HTMLDivElement> = new ObjectMap(
+      (k) => k.toString()
+    );
 
     for (let x = 0; x < n; x++) {
       for (let y = 0; y < n; y++) {
@@ -21,10 +44,20 @@ export class HTMLBoard implements BoardObserver {
           field.classList.add('field');
           field.style.top = `${y * 50 + 6}px`;
           field.style.left = `${x * 50 + 6}px`;
+          field.classList.add('gray');
+          fields.set([x, y], field);
           this.element.appendChild(field);
         }
       }
     }
+
+    this.COLORED.forEach((coloredFields, color) =>
+      coloredFields.forEach((field) => {
+        const f = fields.get(field);
+        f?.classList.remove('gray');
+        f?.classList.add(color);
+      })
+    );
 
     this.element.style.width = `${n * 50 + 6}px`;
     this.element.style.height = `${n * 50 + 6}px`;
@@ -78,8 +111,7 @@ class HTMLPiece implements PieceObserver {
     color: string,
   ) {
     this.element = document.createElement('div');
-    this.element.classList.add('piece');
-    this.element.style.backgroundColor = color;
+    this.element.classList.add('piece', color);
 
     this.element.addEventListener('mousedown', (e) => {
       document.addEventListener('mouseup', this.onMouseUp);
