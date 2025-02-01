@@ -169,6 +169,8 @@ class HTMLPiece implements PieceObserver {
   private centerX: number = 0;
   private centerY: number = 0;
 
+  private dragged: boolean = false;
+
   constructor(
     wrapper: HTMLElement,
     private readonly board: HTMLBoard,
@@ -186,7 +188,6 @@ class HTMLPiece implements PieceObserver {
     this.y = 50 * piece.y + 3 + 25;
     this.setPosition(this.x, this.y);
     wrapper.appendChild(this.element);
-    this.element.addEventListener("click", this.onClick);
   }
 
   onMovabilityUpdate(): void {
@@ -218,17 +219,27 @@ class HTMLPiece implements PieceObserver {
     this.element.classList.remove('dragged');
     this.setPosition(this.x, this.y);
     this.board.hideLegalMoves();
+    this.dragged = false;
   }
 
   private onMouseUp = () => {
-    const field = this.board.getField(this.centerX, this.centerY);
-    this.release();
-    if (field !== null) {
-      this.boardInteractor.movePiece(this.piece.id, field[0], field[1]);
+    if (!this.dragged) {
+      const moves = this.boardInteractor.getLegalMoves(this.piece);
+      console.log(moves);
+      if (moves.length === 1) {
+        this.boardInteractor.movePiece(this.piece.id, moves[0][0], moves[0][1]);
+      }
+    } else {
+      const field = this.board.getField(this.centerX, this.centerY);
+      this.release();
+      if (field !== null) {
+        this.boardInteractor.movePiece(this.piece.id, field[0], field[1]);
+      }
     }
   };
 
   private onDrag = (e: MouseEvent) => {
+    this.dragged = true;
     this.element.classList.add('dragged');
     this.setPosition(
       e.pageX - this.dragX + this.x,
@@ -242,14 +253,6 @@ class HTMLPiece implements PieceObserver {
     this.board.highlightLegalMoves(this.piece);
     this.dragX = e.pageX;
     this.dragY = e.pageY;
-  };
-
-  private onClick = () => {
-    const moves = this.boardInteractor.getLegalMoves(this.piece);
-    console.log(moves)
-    if (moves.length === 1) {
-      this.boardInteractor.movePiece(this.piece.id, moves[0][0], moves[0][1]);
-    }
   };
 
   private setPosition(x: number, y: number) {
