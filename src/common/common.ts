@@ -28,3 +28,7 @@ export class Translator<T extends object> {
     return null;
   }
 }
+
+export interface SocketData {
+  token: string;
+}

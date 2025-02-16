@@ -1,9 +1,10 @@
 import {
   ClientToServer,
   ServerToClient,
+  SocketData,
   Translator,
 } from '../common/common.ts';
-import { Action, ACTIONS, Event, EVENTS, State } from '../common/game.ts';
+import { Action, ACTIONS, Event, EVENTS, StateDto } from '../common/game.ts';
 import { Socket } from 'https://deno.land/x/socket_io@0.2.1/mod.ts';
 
 export interface ActionReceiver {
@@ -15,7 +16,7 @@ export type PlayerSocket = Socket<
   ClientToServer,
   ServerToClient,
   Record<string | number | symbol, never>,
-  Record<string | number | symbol, never>
+  SocketData
 >;
 
 export class RemoteClient {
@@ -41,7 +42,7 @@ export class RemoteClient {
     this.socket.emit('event', id, data);
   }
 
-  public init(s: State) {
+  public init(s: StateDto) {
     this.socket.emit('init', s);
   }
 }

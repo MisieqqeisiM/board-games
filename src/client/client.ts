@@ -3,12 +3,12 @@ import {
   ServerToClient,
   Translator,
 } from '../common/common.ts';
-import { Action, ACTIONS, Event, EVENTS, State } from '../common/game.ts';
+import { Action, ACTIONS, Event, EVENTS, StateDto } from '../common/game.ts';
 import { io, Socket } from './libs.ts';
 
 export interface EventReceiver {
   event(e: Event): void;
-  init(s: State): void;
+  init(s: StateDto): void;
 }
 
 export class Client {
@@ -17,8 +17,12 @@ export class Client {
 
   private socket: Socket<ServerToClient, ClientToServer>;
 
-  constructor(receiver: EventReceiver) {
-    this.socket = io({ autoConnect: false, transports: ['websocket'] });
+  constructor(receiver: EventReceiver, token: string) {
+    this.socket = io({
+      autoConnect: false,
+      transports: ['websocket'],
+      auth: { token },
+    });
 
     this.socket.on('connect', () => {
       console.log('hello');
